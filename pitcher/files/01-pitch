@@ -1,0 +1,24 @@
+#!/bin/sh
+. /etc/functions.sh
+
+config_load pitcher
+
+bat(){
+    local servo_path
+    config_get servo_path $1 servo_path
+    batter $servo_path
+}
+
+if [ "$ACTION" = "released" -a "$BUTTON" = "BTN_1" ]; then
+    if [ -e /tmp/pitcher-notify ]; then
+	echo "BTN_1 released $SEEN $SEQNUM" > /tmp/pitcher-notify
+    else
+	logger -p user.warn "Pitcher button pressed but no pipe to notify!"
+    fi
+
+    if hash batter 2>/dev/null; then
+	config_foreach bat batter
+    else
+	logger -p user.warn "Pitcher button pressed but no batter to pitch to!"
+    fi
+fi
