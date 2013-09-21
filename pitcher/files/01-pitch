@@ -3,12 +3,6 @@
 
 config_load pitcher
 
-bat(){
-    local servo_path
-    config_get servo_path $1 servo_path
-    batter $servo_path
-}
-
 if [ "$ACTION" = "released" -a "$BUTTON" = "BTN_1" ]; then
     broker_user=`config_get mqtt username`
     broker_password=`config_get mqtt password`
@@ -21,14 +15,17 @@ if [ "$ACTION" = "released" -a "$BUTTON" = "BTN_1" ]; then
     config_get name mqtt name
 
     if hash mosquitto_pub 2>/dev/null; then
-	mosquitto_pub "--host $host --port $port --message released --topic $topic_root$name/button"
+	logger -p user.debug "mosquitto_pub --host $host --port $port --message released --topic $topic_root/$name/button"
+	mosquitto_pub --host "$host" --port "$port" --message 'released' --topic "$topic_root/$name/button" &
     else
 	logger -p user.warn "Pitcher button pressed but moquitto_pub doesn't exist"
     fi
 
     if hash batter 2>/dev/null; then
-	local servoconfig_get
-	config_foreach bat batter
+	local servo_path
+	config_get servo_path batter servo_path
+	logger -p user.debug "batter $servo_path"
+	batter $servo_path &
     else
 	logger -p user.warn "Pitcher button pressed but no batter to pitch to!"
     fi

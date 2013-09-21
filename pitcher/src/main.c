@@ -1,8 +1,10 @@
+#include <errno.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 
-#include "mosquitto.h"
+#include <mosquitto.h>
+
 #include "config.h"
 
 #define DEBUG 1
@@ -23,7 +25,7 @@ void debug_print(char* format, ...){
 
 void on_log(struct mosquitto *mosq, void *userdata, int level, const char *str)
 {
-    debug_print("%s\n", str);
+    debug_print("MOSQUITTO LOG: %s\n", str);
 }
 
 void on_connect(struct mosquitto *mosq, void *userdata, int result)
@@ -31,11 +33,11 @@ void on_connect(struct mosquitto *mosq, void *userdata, int result)
     char topic[64];
     if(!result){
 	snprintf(topic, 64, "%s/+/button", conf.topic_root);
-	debug_print("Subscribing to topic", topic);
+	debug_print("Subscribing to topic '%s'.\n", topic);
 	mosquitto_subscribe(mosq, NULL, topic, 2);
     } else {
 	fprintf(stderr, "Connect failed\n");
-	mosquitto_loop_stop(mosq, 1);
+	mosquitto_disconnect(mosq);
     }
 }
 
@@ -53,7 +55,7 @@ void on_subscribe(struct mosquitto *mosq, void *userdata, int mid, int qos_count
 void on_message(struct mosquitto *mosq, void *userdata, const struct mosquitto_message *message)
 {
     char batter_command[128];
-    bool *match;
+    bool match;
 
     debug_print("MSG: %s ", message->topic);
     if(message->payloadlen) {
@@ -61,10 +63,9 @@ void on_message(struct mosquitto *mosq, void *userdata, const struct mosquitto_m
     } else {
 	debug_print("(null)\n");
     }
-    fflush(stdout);
 
-    mosquitto_topic_matches_sub(my_topic, message->topic, match);
-    if(*match){
+    mosquitto_topic_matches_sub(my_topic, message->topic, &match);
+    if(match){
 	debug_print("Received a message on my own topic, ignoring.\n");
 	return;
     }
@@ -74,7 +75,8 @@ void on_message(struct mosquitto *mosq, void *userdata, const struct mosquitto_m
     }
 
     // Bang ze drum!
-    snprintf(batter_command, 64, "batter %s", conf.servo_path);
+    snprintf(batter_command, 128, "batter %s", conf.servo_path);
+    debug_print("Running batter: %s\n", batter_command);
     system(batter_command);
 }
 
@@ -84,22 +86,21 @@ int deinit(){
 }
 
 int main (int argc, char *argv[]) {
-    int i;
-    char id[30];
+    int i, rc;
     struct mosquitto *mosq = NULL;
     int keepalive = 60;
-    bool clean_session = true;
 
     if(load_config())
     {
 	fprintf(stderr, "Error loading config from UCI\n");
 	return 1;
     }
-    // We're going to pass this to a system call so be really careful
     snprintf(my_topic, 64, "%s/%s/button", conf.topic_root, conf.name);
-    for(i=0; strlen(conf.servo_path); i++){
+
+    // We're going to pass this to a system call so be really careful
+    for(i=0; i < strlen(conf.servo_path); i++){
 	if(!(isalnum(conf.servo_path[i]) || conf.servo_path[i] == ' ')){
-	    fprintf(stderr, "Servo path must have only alphanumeric characters and spaces");
+	    fprintf(stderr, "Servo path must have only alphanumeric characters and spaces\n");
 	    return 1;
 	}
     }
@@ -114,9 +115,9 @@ int main (int argc, char *argv[]) {
 
     mosquitto_lib_init();
 
-    mosq = mosquitto_new(id, clean_session, NULL);
+    mosq = mosquitto_new(NULL, true, NULL);
     if(!mosq){
-	fprintf(stderr, "Error: Out of memory.\n");
+	fprintf(stderr, "Out of memory.\n");
 	return 1;
     }
 
@@ -125,17 +126,27 @@ int main (int argc, char *argv[]) {
     mosquitto_message_callback_set(mosq, on_message);
     mosquitto_subscribe_callback_set(mosq, on_subscribe);
 
-    debug_print("Connecting to MQTT broker at %s:%d", conf.host, conf.port);
+    debug_print("Connecting to MQTT broker at %s:%d\n", conf.host, conf.port);
 
     if(mosquitto_connect(mosq, conf.host, conf.port, keepalive)){
 	fprintf(stderr, "Unable to connect.\n");
 	return 1;
     }
 
-    debug_print("Connected to MQTT broker.  Subscribing to topic");
+    debug_print("Connected to MQTT broker. Starting network loop.\n");
 
-    while(!mosquitto_loop(mosq, -1, -1)){
+    rc = mosquitto_loop_forever(mosq, -1, 1);
+
+    if(rc){
+	fprintf(stderr, "Error in network loop: ");
+	if(rc == MOSQ_ERR_ERRNO){
+	    fprintf(stderr, "%s\n", strerror(errno));
+	} else{
+	    fprintf(stderr, "%s\n", mosquitto_strerror(rc));
+	}
     }
+
+    debug_print("Network loop finished, cleaning up and exiting.\n");
     mosquitto_destroy(mosq);
 
     return 0;

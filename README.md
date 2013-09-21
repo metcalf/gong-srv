@@ -16,11 +16,21 @@ This more or less follows the procedure outlined by the OpenWRT [docs](http://wi
 
         sudo apt-get install build-essential subversion libncurses5-dev zlib1g-dev gawk gcc-multilib flex git-core gettext
 
-1. Place the files in patches/ into the `target/linux/generic/patches-2.6.37/` directory.
+1. Place the files in patches/ into the `target/linux/generic/patches-2.6.37/` directory. Note that patch 981 isn't really generic, it's for ar2315 SoCs.
 
-1. Customize and build.  In menuconfig you need to set Kernel modules/Other modules/kmod-pwm-gpio-custom as a built-in package.
+1. Edit your feeds.conf to add this repo and the following mosquitto dependency:
+
+        src-git gongsrv git://github.com/narced133/gong-srv.git
+        src-git owrt_pub_feeds git://github.com/remakeelectric/owrt_pub_feeds.git
+
+1. Download feeds
 
         ./scripts/feeds update -a
+        ./scripts/feeds/install -p owrt_pub_feeds -a
+        ./scripts/feeds/install -p gongsrv -a
+
+1. In menuconfig you need to add packages for pitcher, batter and the various gpio packages.  In kernel_menuconfig, you need to add the gpio packages.
+
         make menuconfig
         make tools/quilt/install
         make kernel_menuconfig

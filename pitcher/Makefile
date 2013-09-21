@@ -17,7 +17,7 @@ define Package/pitcher
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:= Utility for running commands on GPIO events
-  DEPENDS:= +libuci +libmosquitto-nossl +mosquitto-client-nossl +kmod-button-hotplug +kmod-input-gpio-buttons +kmod-input-gpio-keys +kmod-input-gpio-keys-polled
+  DEPENDS:= +libuci +libmosquitto-nossl +mosquitto-client-nossl +kmod-button-hotplug +kmod-input-gpio-keys-polled
 endef
 
 define Package/pitcher/description
