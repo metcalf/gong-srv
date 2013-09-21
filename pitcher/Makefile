@@ -12,11 +12,12 @@ TARGET_CFLAGS := \
 	-I$(LINUX_DIR)/include \
 	$(TARGET_CFLAGS)
 
+# TODO: Cleanup the dependency list here
 define Package/pitcher
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:= Utility for running commands on GPIO events
-  DEPENDS:= +libuci +libircclient
+  DEPENDS:= +libuci +libmosquitto-nossl +mosquitto-client-nossl +kmod-button-hotplug +kmod-input-gpio-buttons +kmod-input-gpio-keys +kmod-input-gpio-keys-polled
 endef
 
 define Package/pitcher/description
@@ -30,7 +31,7 @@ endef
 
 define Build/Compile
         $(MAKE) -C $(PKG_BUILD_DIR) \
-        $(TARGET_CONFIGURE_OPTS) LDFLAGS="$(TARGET_LDFLAGS) -lm -luci" CFLAGS="$(TARGET_CFLAGS)"
+        $(TARGET_CONFIGURE_OPTS) LDFLAGS="$(TARGET_LDFLAGS) -lm -luci -lmosquitto" CFLAGS="$(TARGET_CFLAGS)"
 endef
 
 define Package/pitcher/install

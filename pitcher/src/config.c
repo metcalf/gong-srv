@@ -23,7 +23,7 @@ int load_option(struct uci_context *ctx, char *option, char *val, int num)
     struct uci_ptr p;
     char path[64];
 
-    snprintf(path, 64, "pitcher.irc.%s", option);
+    snprintf(path, 64, "pitcher.%s", option);
 
     if (uci_lookup_ptr (ctx, &p, path, true) != UCI_OK)
     {
@@ -57,17 +57,55 @@ int load_string_option(struct uci_context *ctx, char *option, char **val)
     return retval;
 }
 
+int load_long_option(struct uci_context *ctx, char *option, long int *val)
+{
+    char strval[16];
+    int retval;
+
+    retval = load_option(ctx, option, strval, 16);
+    if(retval)
+	return retval;
+
+    *val = strtol(strval, NULL, 0);
+
+    /*if(!*val || strval[0] == '0')
+      {
+      fprintf(stderr, "Error converting string to long: %s\n", strval);
+      return 1;
+      }*/
+    return retval;
+}
+
+int load_int_option(struct uci_context *ctx, char *option, int *val)
+{
+    long int longval;
+
+    if(load_long_option(ctx, option, &longval))
+	return 1;
+
+    if(longval > INT_MAX || longval < INT_MIN)
+    {
+	fprintf(stderr, "Error converting long to integer: %l\n", longval);
+	return 1;
+    }
+
+    *val = (int) longval;
+
+    return 0;
+}
+
 int load_config()
 {
     int retval = 0;
 
     struct uci_context *ctx = uci_init();
 
-    retval += load_string_option(ctx, "host", &conf.host);
-    printf("Config host %s\n", conf.host);
-    retval += load_string_option(ctx, "nick", &conf.nick);
-    retval += load_string_option(ctx, "channel", &conf.channel);
-    retval += load_string_option(ctx, "secret", &conf.secret);
+    retval += load_string_option(ctx, "mqtt.host", &conf.host);
+    retval += load_string_option(ctx, "mqtt.name", &conf.name);
+    retval += load_string_option(ctx, "mqtt.topic_root", &conf.topic_root);
+    retval += load_int_option(ctx, "mqtt.port", &conf.port);
+
+    retval += load_string_option(ctx, "batter.servo_path", &conf.servo_path);
 
     uci_cleanup(ctx);
 
@@ -77,7 +115,6 @@ int load_config()
 void free_config()
 {
     free(conf.host);
-    free(conf.nick);
-    free(conf.channel);
-    free(conf.secret);
+    free(conf.name);
+    free(conf.topic_root);
 }

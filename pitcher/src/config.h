@@ -5,9 +5,11 @@
 
 typedef struct configuration {
     char *host;
-    char *nick;
-    char *channel;
-    char *secret;
+    char *name;
+    char *topic_root;
+    int port;
+
+    char *servo_path;
 } Configration;
 
 extern Configration conf;
