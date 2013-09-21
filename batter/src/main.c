@@ -197,7 +197,7 @@ int perform_actions(action actions[], int num)
 	}
 	else
 	{
-	    fprintf(stderr, "Received an invalid action type\n");
+	    fprintf(stderr, "Received an invalid action type.\n");
 	    return 1;
 	}
     }
@@ -282,7 +282,7 @@ int main (int argc, char *argv[])
 	    }
 	    break;
 	default:
-	    fprintf(stderr, "Invalid action type '%s'.\n\n", argv[i+1][0]);
+	    fprintf(stderr, "Invalid action type '%c'.\n\n", argv[i+1][0]);
 	    print_help(argv[0]);
 	    exit(1);
 
