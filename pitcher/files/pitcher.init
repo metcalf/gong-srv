@@ -1,0 +1,33 @@
+#!/bin/sh /etc/rc.common
+# Basic init script for pitcher
+
+START=99
+
+SERVICE_DAEMONIZE=1
+SERVICE_WRITE_PID=1
+
+pwmconfig() {
+	local pwr_gpio
+	local pwm_ctl
+	local pwm_dev
+	config_load batter
+	config_get pwr_gpio main pwr_gpio
+	config_get pwm_ctl main pwm_ctl
+	config_get pwm_dev main pwm_dev
+
+	[ ! -e "/sys/class/gpio/gpio$pwr_gpio" ] && {
+	  echo $pwr_gpio > /sys/class/gpio/export
+	}
+	[ ! -e "/sys/class/pwm/gpio_pwm.0:$pwm_dev" ] && {
+	  insmod pwm-gpio-custom bus$pwm_dev=0,$pwm_ctl
+	}
+}
+
+start() {
+	pwmconfig
+	service_start /usr/sbin/pitcher
+}
+
+stop() {
+        service_stop /usr/sbin/pitcher
+}

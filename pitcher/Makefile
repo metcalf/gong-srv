@@ -39,6 +39,10 @@ define Package/pitcher/install
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/button
 	$(INSTALL_CONF) ./files/pitcher.config $(1)/etc/config/pitcher
 	$(INSTALL_CONF) ./files/01-pitch $(1)/etc/hotplug.d/button/01-pitch
+
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/pitcher.init $(1)/etc/init.d/pitcher
+
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/pitcher $(1)/usr/sbin/pitcher
 endef
