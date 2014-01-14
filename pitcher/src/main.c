@@ -8,9 +8,11 @@
 #include "config.h"
 
 #define DEBUG 1
+#define KEEPALIVE 60
 
 Configration conf;
 char my_topic[64];
+int next_message_id = 0;
 
 void debug_print(char* format, ...){
     va_list arglist;
@@ -55,6 +57,7 @@ void on_subscribe(struct mosquitto *mosq, void *userdata, int mid, int qos_count
 void on_message(struct mosquitto *mosq, void *userdata, const struct mosquitto_message *message)
 {
     char batter_command[128];
+    int message_id;
     bool match;
 
     debug_print("MSG: %s ", message->topic);
@@ -69,15 +72,22 @@ void on_message(struct mosquitto *mosq, void *userdata, const struct mosquitto_m
 	debug_print("Received a message on my own topic, ignoring.\n");
 	return;
     }
-    if(strcmp(message->payload, "released") != 0){
-	debug_print("Message is not 'released', ignoring.\n");
-	return;
-    }
 
-    // Bang ze drum!
-    snprintf(batter_command, 128, "batter %s", conf.servo_path);
-    debug_print("Running batter: %s\n", batter_command);
-    system(batter_command);
+    if(strncmp(message->payload, "released", message->payloadlen) == 0){
+	// Bang ze drum!
+	snprintf(batter_command, 128, "batter %s", conf.servo_path);
+	debug_print("Running batter: %s\n", batter_command);
+	system(batter_command);
+    } else if(strncmp(message->payload, "ping", message->payloadlen) == 0) {
+	debug_print("Got a ping, sending pong.");
+
+	message_id = next_message_id;
+	mosquitto_publish(mosq, &message_id, my_topic, 4, "pong", 0, 0);
+	next_message_id++;
+
+    } else {
+	debug_print("Unrecognized message, ignoring.\n");
+    }
 }
 
 int deinit(){
@@ -88,7 +98,6 @@ int deinit(){
 int main (int argc, char *argv[]) {
     int i, rc;
     struct mosquitto *mosq = NULL;
-    int keepalive = 60;
 
     if(load_config())
     {
@@ -128,7 +137,7 @@ int main (int argc, char *argv[]) {
 
     debug_print("Connecting to MQTT broker at %s:%d\n", conf.host, conf.port);
 
-    if(mosquitto_connect(mosq, conf.host, conf.port, keepalive)){
+    if(mosquitto_connect(mosq, conf.host, conf.port, KEEPALIVE)){
 	fprintf(stderr, "Unable to connect.\n");
 	return 1;
     }
