@@ -16,7 +16,7 @@ This more or less follows the procedure outlined by the OpenWRT [docs](http://wi
 
         sudo apt-get install build-essential subversion libncurses5-dev zlib1g-dev gawk gcc-multilib flex git-core gettext
 
-1. Place the files in patches/ into the `target/linux/generic/patches-2.6.37/` directory. Note that patch 981 isn't really generic, it's for ar2315 SoCs.
+1. Place the files in patches/ into root checkout directory. Note that patch 981 goes into the generic folder but it isn't really generic, it's for ar2315 SoCs.
 
 1. Edit your feeds.conf to add this repo and the following mosquitto dependency:
 
@@ -26,7 +26,7 @@ This more or less follows the procedure outlined by the OpenWRT [docs](http://wi
 1. Download feeds
 
         ./scripts/feeds update -a
-        ./scripts/feeds/install -p owrt_pub_feeds -a
+        ./scripts/feeds/install -p owrt_pub_feeds mosquitto
         ./scripts/feeds/install -p gongsrv -a
 
 1. In menuconfig you need to add packages for pitcher, batter and the various gpio packages.  In kernel_menuconfig, you need to add the gpio packages.

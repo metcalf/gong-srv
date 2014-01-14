@@ -14,19 +14,19 @@ if [ "$ACTION" = "released" -a "$BUTTON" = "BTN_1" ]; then
     config_get topic_root mqtt topic_root
     config_get name mqtt name
 
+    if hash batter 2>/dev/null; then
+	local servo_path
+	config_get servo_path batter servo_path
+	logger -p user.debug "batter $servo_path"
+	batter $servo_path
+    else
+	logger -p user.warn "Pitcher button pressed but no batter to pitch to!"
+    fi
+
     if hash mosquitto_pub 2>/dev/null; then
 	logger -p user.debug "mosquitto_pub --host $host --port $port --message released --topic $topic_root/$name/button"
 	mosquitto_pub --host "$host" --port "$port" --message 'released' --topic "$topic_root/$name/button" &
     else
 	logger -p user.warn "Pitcher button pressed but moquitto_pub doesn't exist"
-    fi
-
-    if hash batter 2>/dev/null; then
-	local servo_path
-	config_get servo_path batter servo_path
-	logger -p user.debug "batter $servo_path"
-	batter $servo_path &
-    else
-	logger -p user.warn "Pitcher button pressed but no batter to pitch to!"
     fi
 fi
