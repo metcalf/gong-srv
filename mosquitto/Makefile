@@ -9,22 +9,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mosquitto
-PKG_VERSION:=1.2
+PKG_VERSION:=1.3.1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-#PKG_REV:=4b30e412ab77
-#PKG_SOURCE:=$(PKG_REV).tar.bz2
 PKG_SOURCE_URL:=http://mosquitto.org/files/source/
-#PKG_SOURCE_URL:=https://bitbucket.org/oojah/mosquitto/get/
-#PKG_BUILD_DIR:=$(BUILD_DIR)/oojah-mosquitto-$(PKG_REV)
-PKG_MD5SUM:=424bfd84a7c923ccc2ea36c8bee558b2
+PKG_MD5SUM:=2f2870e965cf6f0b5df4ecaf2a0955d2
 
 include $(INCLUDE_DIR)/package.mk
 
 MAKE_FLAGS+=WITH_MEMORY_TRACKING=no
-TARGET_CFLAGS+=-ggdb3
-include $(INCLUDE_DIR)/version.mk
+TARGET_LDFLAGS+= -Wl,-rpath-link=$(STAGING_DIR)/usr/lib
+#TARGET_CFLAGS+=-ggdb3
+#include $(INCLUDE_DIR)/version.mk
 # The version of libopenssl in backfire doesn't support psk.
 ifeq ($(findstring 10.03,$(VERSION_CODE)),10.03)
     MAKE_FLAGS += WITH_TLS_PSK=no
@@ -106,7 +103,7 @@ define Package/libmosquitto/default
     $(Package/mosquitto/default)
     SECTION:=libs
     CATEGORY:=Libraries
-    DEPENDS:=+libpthread +librt
+    DEPENDS:=+libpthread +librt +libcares
     TITLE:= mosquitto - client library
 endef
 
@@ -114,12 +111,12 @@ define Package/libmosquitto
     $(call Package/libmosquitto/default)
     TITLE+= (With SSL Support)
     DEPENDS+= +libopenssl
-    VARIANT=ssl
+    VARIANT:=ssl
 endef
 define Package/libmosquitto-nossl
     $(call Package/libmosquitto/default)
     TITLE+= (Without SSL Support)
-    VARIANT=nossl
+    VARIANT:=nossl
 endef
 
 define Package/libmosquitto/default/description
@@ -128,7 +125,7 @@ use by any third party software that wants to communicate with a
 mosquitto server.
 
 Should be useable for communicating with any MQTT v3.1 compatible
-server, such as IBM's RSMB, in addition to Mosquitto
+server, such as IBM's RSMB, in addition to Mosquitto.
 endef
 
 define Package/libmosquitto/description
@@ -174,7 +171,7 @@ define Build/InstallDev
 	$(CP) $(PKG_BUILD_DIR)/lib/mosquitto.h $(1)/usr/include
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_BUILD_DIR)/lib/libmosquitto.so.1 $(1)/usr/lib/
-	$(LN) $(1)/usr/lib/libmosquitto.so.1 $(1)/usr/lib/libmosquitto.so
+	$(LN) libmosquitto.so.1 $(1)/usr/lib/libmosquitto.so
 endef
 
 # This installs files on the target.  Compare with Build/InstallDev
@@ -185,10 +182,10 @@ define Package/libmosquitto/install
 endef
 Package/libmosquitto-nossl/install = $(Package/libmosquitto/install)
 
-# Applies to all...
-ifeq ($(BUILD_VARIANT),nossl)
-        MAKE_FLAGS += WITH_TLS=no
-endif
+# HACK: Commented this out since variant switching wasn't working
+#ifneq ($(BUILD_VARIANT),ssl)
+MAKE_FLAGS += WITH_TLS=no
+#endif
 
 $(eval $(call BuildPackage,$(PKG_NAME)))
 $(eval $(call BuildPackage,$(PKG_NAME)-nossl))

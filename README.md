@@ -16,12 +16,11 @@ This more or less follows the procedure outlined by the OpenWRT [docs](http://wi
 
         sudo apt-get install build-essential subversion libncurses5-dev zlib1g-dev gawk gcc-multilib flex git-core gettext
 
-1. Place the files in patches/ into root checkout directory. Note that patch 981 goes into the generic folder but it isn't really generic, it's for ar2315 SoCs.
+1. Place the files in patches/ into root checkout directory.
 
-1. Edit your feeds.conf to add this repo and the following mosquitto dependency:
+1. Edit your feeds.conf to add this repo and the following mosquitto dependency. Add it at the top to ensure it takes priority.
 
         src-git gongsrv git://github.com/narced133/gong-srv.git
-        src-git owrt_pub_feeds git://github.com/remakeelectric/owrt_pub_feeds.git
 
 1. Download feeds
 

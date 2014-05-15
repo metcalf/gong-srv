@@ -11,6 +11,7 @@ TARGET_CFLAGS := \
 	-I$(STAGING_DIR)/usr/include/ \
 	-I$(LINUX_DIR)/include \
 	$(TARGET_CFLAGS)
+TARGET_LDFLAGS+= -Wl,-rpath-link=$(STAGING_DIR)/usr/lib
 
 # TODO: Cleanup the dependency list here
 define Package/pitcher
